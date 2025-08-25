@@ -484,42 +484,6 @@ async function createCalendarEvent({ name, email, phone, service, message, addre
 
 app.post('/api/chat', async (req, res) => {
   try {
-// Append to Google Sheet (contact log)
-try{
-  const sheets = getSheetsClient();
-  if (sheets && process.env.SHEETS_SPREADSHEET_ID && (process.env.SHEETS_CONTACTS_RANGE || process.env.SHEETS_TESTIMONIALS_RANGE)){
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.SHEETS_SPREADSHEET_ID,
-      range: process.env.SHEETS_CONTACTS_RANGE || 'Contacts!A:I',
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[
-        new Date().toISOString(), name, email, phone || '', service || '', message || '', address || '', preferredDate || '', preferredTime || ''
-      ]] }
-    });
-  }
-}catch(e){ console.error('Sheets append error', e); }
-// Create Calendar event if possible
-await createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime });
-
-const html = `
-  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0b0b0d;color:#f2f2f2;padding:24px">
-    <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#121217;border:1px solid rgba(255,255,255,.08);border-radius:12px">
-      <tr><td style="padding:24px">
-        <h1 style="margin:0 0 8px;font-size:22px;color:#E5E4E2">We received your message</h1>
-        <p style="margin:0 0 16px;color:#a1a1a1">Thanks for reaching out to Keystone Notary Group, LLC. We'll respond shortly.</p>
-        <div style="padding:12px 16px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:#0f1013">
-          <p style="margin:0 0 6px"><strong>Name:</strong> ${name}</p>
-          <p style="margin:0 0 6px"><strong>Email:</strong> ${email}</p>
-          <p style="margin:0 0 6px"><strong>Phone:</strong> ${phone || 'n/a'}</p>
-          <p style="margin:0"><strong>Service:</strong> ${service || 'n/a'}</p>
-        </div>
-        <p style="margin:16px 0 8px"><strong>Your message:</strong></p>
-        <pre style="white-space:pre-wrap;background:#0b0b0d;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px">${message}</pre>
-        <p style="margin:16px 0;color:#a1a1a1">Call us at <a href="tel:+12673099000" style="color:#E5E4E2;text-decoration:none">(267) 309‑9000</a> or reply to this email.</p>
-      </td></tr>
-      <tr><td style="padding:16px;border-top:1px solid rgba(255,255,255,.08);text-align:center;color:#a1a1a1">© Keystone Notary Group, LLC · Hellertown, PA</td></tr>
-    </table>
-  </div>`;
 
     if (!OPENAI_API_KEY) {
       return res.json({ reply: 'Hi! This is the Keystone Notary demo assistant. I can answer general questions about mobile notarization and booking. For specific documents or legal guidance, call (267) 309‑9000 or email info@keystonenotarygroup.com.' });
