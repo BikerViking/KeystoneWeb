@@ -16,7 +16,7 @@ export function Services(){
       })
     })
   },[])
-  const items = items.length ? items : [
+  const display = items.length ? items : [
     {title:'Loan Signings', body:'Purchase, refinance, HELOC, reverse—error‑free, lender‑friendly packages.'},
     {title:'General Notary Work', body:'POAs, affidavits, deeds, titles, I‑9s, and more—mobile to you.'},
     {title:'After‑Hours & Rush', body:'Evenings/weekends on request with punctual arrival windows.'},
@@ -25,7 +25,7 @@ export function Services(){
   return (
     <section id="services" className="min-h-[100svh] grid place-items-center px-4">
       <div className="max-w-6xl w-full grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {items.map((it, idx)=>(
+        {display.map((it, idx)=>(
           <article key={idx} className="card rounded-xl border border-white/10 bg-white/5 p-5">
             <h2 className="text-xl font-bold mb-2">{it.title}</h2>
             <p className="text-muted">{it.body}</p>
