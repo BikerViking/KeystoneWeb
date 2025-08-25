@@ -466,13 +466,13 @@ async function createCalendarEvent({ name, email, phone, service, message, addre
 
 
 app.post('/api/chat', async (req, res) => {
-  const { name, email, phone, service, message, address, preferredDate, preferredTime } = req.body || {};
+  const { message } = req.body || {};
   try {
 
     if (!OPENAI_API_KEY) {
       return res.json({ reply: 'Hi! This is the Keystone Notary demo assistant. I can answer general questions about mobile notarization and booking. For specific documents or legal guidance, call (267) 309‑9000 or email info@keystonenotarygroup.com.' });
     }
-    const userMsg = (req.body?.message || '').toString().slice(0, 2000);
+    const userMsg = (message || '').toString().slice(0, 2000);
 
     const sys = `You are a friendly, concise support agent for Keystone Notary Group, LLC.
 Location: Hellertown, PA. Services: mobile notary, NNA certified & insured signing agents.
