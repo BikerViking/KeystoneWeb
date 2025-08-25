@@ -5,11 +5,13 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
+import cookieParser from 'cookie-parser';
 // ---------- File Uploads -> Google Drive (or local demo) ----------
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 
+const app = express();
 const upload = multer({ dest: path.resolve(process.cwd(), 'tmp') });
 const DRIVE_ROOT_FOLDER_ID = process.env.DRIVE_ROOT_FOLDER_ID;
 
@@ -80,10 +82,8 @@ app.post('/api/upload', upload.array('files', 10), async (req, res)=>{
   }
 });
 
-import cookieParser from 'cookie-parser';
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET;
 
-const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('tiny'));
@@ -483,6 +483,7 @@ async function createCalendarEvent({ name, email, phone, service, message, addre
 
 
 app.post('/api/chat', async (req, res) => {
+  const { name, email, phone, service, message, address, preferredDate, preferredTime } = req.body || {};
   try {
 
     if (!OPENAI_API_KEY) {
@@ -524,4 +525,8 @@ Phone: (267) 309-9000. Email: info@keystonenotarygroup.com. Avoid legal advice; 
 });
 
 const PORT = Number(process.env.PORT || 8787);
-app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+}
+
+export default app;
