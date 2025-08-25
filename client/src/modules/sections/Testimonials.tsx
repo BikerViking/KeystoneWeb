@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 
-const DATA: {quote:string, author:string}[] = []
+const DATA: {quote:string, author:string}[] = [
   {quote: 'On time, professional, and kind. Got our refinance done flawlessly.', author: 'J. Ramirez'},
   {quote: 'Showed up after hours at the hospital and handled everything smoothly.', author: 'K. Patel'},
   {quote: 'As a title office, we need perfection. They delivered.', author: 'J. Li, Escrow Officer'},
@@ -10,15 +10,15 @@ const DATA: {quote:string, author:string}[] = []
 
 export function Testimonials(){
   const [i, setI] = useState(0)
-  const [data, setData] = useState<{quote:string, author:string}[]>([])
-  useEffect(()=>{ fetch('/api/cms/testimonials').then(r=>r.json()).then(j=> setData(j.data || [])) },[])
+  const [data, setData] = useState<{quote:string, author:string}[]>(DATA)
+  useEffect(()=>{ fetch('/api/cms/testimonials').then(r=>r.json()).then(j=> setData(j.data || DATA)) },[])
   const wrapRef = useRef<HTMLDivElement>(null)
   useEffect(()=>{
     const el = wrapRef.current; if(!el) return
     const tl = gsap.timeline({ repeat: -1 })
     tl.to({}, { duration: 4 })
       .add(()=> setI(prev => (prev + 1) % Math.max(1, data.length)))
-    return ()=> tl.kill()
+    return () => { tl.kill() }
   },[data])
 
   useEffect(()=>{

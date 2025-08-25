@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+package-lock.json
+.env
+
+# build outputs
+client/dist/
+server/dist/
+uploads/
+tmp/
