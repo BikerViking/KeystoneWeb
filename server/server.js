@@ -338,23 +338,6 @@ app.post('/api/contact', async (req, res) => {
   // reCAPTCHA check when secret is set
   if (RECAPTCHA_SECRET) {
     try {
-// Append to Google Sheet (contact log)
-try{
-  const sheets = getSheetsClient();
-  if (sheets && process.env.SHEETS_SPREADSHEET_ID && (process.env.SHEETS_CONTACTS_RANGE || process.env.SHEETS_TESTIMONIALS_RANGE)){
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.SHEETS_SPREADSHEET_ID,
-      range: process.env.SHEETS_CONTACTS_RANGE || 'Contacts!A:I',
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[
-        new Date().toISOString(), name, email, phone || '', service || '', message || '', address || '', preferredDate || '', preferredTime || ''
-      ]] }
-    });
-  }
-}catch(e){ console.error('Sheets append error', e); }
-// Create Calendar event if possible
-await createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime });
-
       const r = await fetch('https://www.google.com/recaptcha/api/siteverify', {
         method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ secret: RECAPTCHA_SECRET, response: recaptcha || '' })
@@ -375,24 +358,24 @@ Message:
 ${message}
 `;
   try {
-// Append to Google Sheet (contact log)
-try{
-  const sheets = getSheetsClient();
-  if (sheets && process.env.SHEETS_SPREADSHEET_ID && (process.env.SHEETS_CONTACTS_RANGE || process.env.SHEETS_TESTIMONIALS_RANGE)){
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.SHEETS_SPREADSHEET_ID,
-      range: process.env.SHEETS_CONTACTS_RANGE || 'Contacts!A:I',
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[
-        new Date().toISOString(), name, email, phone || '', service || '', message || '', address || '', preferredDate || '', preferredTime || ''
-      ]] }
-    });
-  }
-}catch(e){ console.error('Sheets append error', e); }
-// Create Calendar event if possible
-await createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime });
+    // Append to Google Sheet (contact log)
+    try {
+      const sheets = getSheetsClient();
+      if (sheets && process.env.SHEETS_SPREADSHEET_ID && (process.env.SHEETS_CONTACTS_RANGE || process.env.SHEETS_TESTIMONIALS_RANGE)) {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: process.env.SHEETS_SPREADSHEET_ID,
+          range: process.env.SHEETS_CONTACTS_RANGE || 'Contacts!A:I',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[
+            new Date().toISOString(), name, email, phone || '', service || '', message || '', address || '', preferredDate || '', preferredTime || ''
+          ]] }
+        });
+      }
+    } catch(e) { console.error('Sheets append error', e); }
+    // Create Calendar event if possible
+    await createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime });
 
-const html = `
+    const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0b0b0d;color:#f2f2f2;padding:24px">
     <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#121217;border:1px solid rgba(255,255,255,.08);border-radius:12px">
       <tr><td style="padding:24px">
