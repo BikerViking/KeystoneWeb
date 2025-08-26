@@ -99,7 +99,7 @@ useEffect(()=>{
           <label className="grid gap-1 font-semibold">Email<input required type="email" name="email" className="rounded border border-white/15 bg-black/40 p-2" placeholder="jane@example.com"/></label>
         </div>
         <div className="grid md:grid-cols-2 gap-4">
-          <label className="grid gap-1 font-semibold">Phone<input name="phone" className="rounded border border-white/15 bg-black/40 p-2" placeholder="(267) 555‑0123"/></label>
+          <label className="grid gap-1 font-semibold">Phone<input name="phone" className="rounded border border-white/15 bg-black/40 p-2" placeholder="(267) 309‑9000"/></label>
           <label className="grid gap-1 font-semibold">Service<select name="service" className="rounded border border-white/15 bg-black/40 p-2">
             <option>Loan Signing</option><option>General Notarization</option><option>I‑9 Verification</option><option>Other</option>
           </select></label>
