@@ -42,7 +42,7 @@ Deploy `client/dist` to static hosting. Deploy `server/` to Node hosting and set
 
 ## Optional power-ups
 - **reCAPTCHA v3**: set `VITE_RECAPTCHA_SITEKEY` in client env and `RECAPTCHA_SECRET` in server env.
-- **Analytics**: Plausible script in `client/index.html` (replace `data-domain`).
+- **Analytics**: set `VITE_PLAUSIBLE_DOMAIN` to enable Plausible in `client/index.html`.
 - **Calendar invites**: ICS auto-attached on contact confirmation.
 - **Travel fee estimator**: click on the map to compute distance & fee.
 
