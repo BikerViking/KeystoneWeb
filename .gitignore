@@ -4,7 +4,14 @@ server/node_modules/
 dist/
 *.tsbuildinfo
 package-lock.json
+
+# Local environment files
 .env
+.env.production
+client/.env
+client/.env.production
+server/.env
+server/.env.production
 
 # build outputs
 client/dist/
