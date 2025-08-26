@@ -34,8 +34,24 @@
 <meta property="og:image" content="/assets/icon-512.png">
 <meta name="twitter:card" content="summary_large_image">
 
-    <!-- Analytics (replace data-domain with your domain) -->
-  <script defer data-domain="keystonenotarygroup.com" src="https://plausible.io/js/script.js"></script>
+    <!-- Optional analytics & reCAPTCHA -->
+  <script type="module">
+    const domain = import.meta.env.VITE_PLAUSIBLE_DOMAIN;
+    if (domain) {
+      const s = document.createElement('script');
+      s.defer = true;
+      s.dataset.domain = domain;
+      s.src = 'https://plausible.io/js/script.js';
+      document.head.appendChild(s);
+    }
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITEKEY;
+    if (siteKey) {
+      const s = document.createElement('script');
+      s.id = 'recaptcha-script';
+      s.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+      document.head.appendChild(s);
+    }
+  </script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
