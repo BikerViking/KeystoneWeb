@@ -132,7 +132,7 @@ useEffect(()=>{
         </div>
         <div id="booking" className="pt-6 border-t border-white/10">
           <h3 className="font-bold mb-2">Booking</h3>
-          <a className="border border-white/15 rounded-lg px-4 py-2 inline-block" href="https://calendly.com/keystonenotarygroup/appointment" target="_blank" rel="noopener">Open Booking</a>
+          <a className="border border-white/15 rounded-lg px-4 py-2 inline-block" href="https://calendly.com/keystonenotarygroup/appointment" target="_blank" rel="noopener noreferrer">Open Booking</a>
         </div>
       <input type="text" name="company" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
       </form>
