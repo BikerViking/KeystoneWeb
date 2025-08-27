@@ -84,10 +84,15 @@ useEffect(()=>{
       setStatus('Message sent. We’ll get back shortly.')
       e.currentTarget.reset()
     }catch(err){
-      // Offline-first: queue message
-      const box = JSON.parse(localStorage.getItem(outboxKey) || '[]'); box.push(payload); localStorage.setItem(outboxKey, JSON.stringify(box));
-      setStatus('Offline: saved your message. We\'ll send it when you\'re back online.');
-      setStatus('Failed to send. Try email or phone.')
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine
+      if(offline){
+        const box = JSON.parse(localStorage.getItem(outboxKey) || '[]')
+        box.push(payload)
+        localStorage.setItem(outboxKey, JSON.stringify(box))
+        setStatus("Offline: saved your message. We'll send it when you're back online.")
+      }else{
+        setStatus('Failed to send. Try email or phone.')
+      }
     }
   }
   return (
