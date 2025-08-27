@@ -1,6 +1,14 @@
 import React, { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import icon from 'leaflet/dist/images/marker-icon.png'
+import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+})
+L.Marker.prototype.options.icon = DefaultIcon
 
 const HELLERTOWN = [40.5795, -75.3407] as [number, number]
 
@@ -49,7 +57,7 @@ function feeForMiles(m:number){
 fetch('/data/counties.geojson').then(r=>r.json()).then(geo=>{
   const layers:any = {}
   L.geoJSON(geo, {
-    style: (f:any)=>({ color:'#E5E4E2', weight:1, fillOpacity:0.05 }),
+    style: () => ({ color:'#E5E4E2', weight:1, fillOpacity:0.05 }),
     onEachFeature: (f:any, layer:any)=>{
       layer.bindTooltip(f.properties.name)
       layers[f.properties.name] = layer

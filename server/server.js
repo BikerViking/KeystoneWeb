@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import nodemailer from "nodemailer";
 import cookieParser from "cookie-parser";
 import { google } from "googleapis";
 // Redis is optional; dynamically import so tests can run without the module
@@ -190,17 +189,10 @@ app.use(express.json());
 app.use(morgan("tiny"));
 app.use(cookieParser());
 
-// DEMO / ZERO-CONFIG MODE:
-// - If SMTP isn't set, log emails to console and still return success.
-// - If OPENAI_API_KEY is missing, return a helpful canned response.
-const ZERO_CONFIG = !process.env.SMTP_HOST || !process.env.OPENAI_API_KEY;
-
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 app.use("/api/", limiter);
 
 // --- Admin magic-link auth & CMS storage ---
-const ADMIN_EMAIL =
-  process.env.ADMIN_EMAIL || process.env.EMAIL_TO || "owner@example.com";
 const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const REDIS_URL = process.env.REDIS_URL;
@@ -308,17 +300,6 @@ app.post("/api/admin/request-magic-link", async (req, res) => {
       });
     } catch (e) {
       console.error("Send email failed", e);
-    }
-  } else if (transporter) {
-    try {
-      await transporter.sendMail({
-        to: email,
-        from: process.env.EMAIL_FROM || "no-reply@example.com",
-        subject: "Your Keystone admin link",
-        text: `Click to log in: ${url}`,
-      });
-    } catch (e) {
-      console.error(e);
     }
   } else {
     console.log("[DEMO] Admin magic link:", url);
@@ -579,40 +560,6 @@ app.get("/api/route", async (req, res) => {
   return res.status(501).json({ error: "routing provider not configured" });
 });
 
-let transporter = null;
-if (process.env.EMAIL_TRANSPORT === "smtp") {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: false,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-}
-
-function buildICS(summary, description) {
-  const dt = new Date();
-  const dtStart = new Date(dt.getTime() + 60 * 60 * 1000); // default start in 1h
-  const dtEnd = new Date(dtStart.getTime() + 60 * 60 * 1000); // 1h duration
-  function fmt(d) {
-    return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-  }
-  return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Keystone Notary Group//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    "UID:keystone-" + Date.now() + "@keystone",
-    "DTSTAMP:" + fmt(new Date()),
-    "DTSTART:" + fmt(dtStart),
-    "DTEND:" + fmt(dtEnd),
-    "SUMMARY:" + summary,
-    "DESCRIPTION:" + description.replace(/\n/g, "\\n"),
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-}
 
 app.post("/api/contact", async (req, res) => {
   const {
@@ -632,7 +579,7 @@ app.post("/api/contact", async (req, res) => {
   // reCAPTCHA check when secret is set
   if (RECAPTCHA_SECRET) {
     try {
-      const r = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      const r = await global.fetch("https://www.google.com/recaptcha/api/siteverify", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
@@ -709,26 +656,6 @@ ${message}
       uploads,
     });
 
-    const html = `
-  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0b0b0d;color:#f2f2f2;padding:24px">
-    <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#121217;border:1px solid rgba(255,255,255,.08);border-radius:12px">
-      <tr><td style="padding:24px">
-        <h1 style="margin:0 0 8px;font-size:22px;color:#E5E4E2">We received your message</h1>
-        <p style="margin:0 0 16px;color:#a1a1a1">Thanks for reaching out to Keystone Notary Group, LLC. We'll respond shortly.</p>
-        <div style="padding:12px 16px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:#0f1013">
-          <p style="margin:0 0 6px"><strong>Name:</strong> ${name}</p>
-          <p style="margin:0 0 6px"><strong>Email:</strong> ${email}</p>
-          <p style="margin:0 0 6px"><strong>Phone:</strong> ${phone || "n/a"}</p>
-          <p style="margin:0"><strong>Service:</strong> ${service || "n/a"}</p>
-        </div>
-        <p style="margin:16px 0 8px"><strong>Your message:</strong></p>
-        <pre style="white-space:pre-wrap;background:#0b0b0d;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px">${message}</pre>
-        <p style="margin:16px 0;color:#a1a1a1">Call us at <a href="tel:+12673099000" style="color:#E5E4E2;text-decoration:none">(267) 309‑9000</a> or reply to this email.</p>
-      </td></tr>
-      <tr><td style="padding:16px;border-top:1px solid rgba(255,255,255,.08);text-align:center;color:#a1a1a1">© Keystone Notary Group, LLC · Hellertown, PA</td></tr>
-    </table>
-  </div>`;
-
     if (
       SENDGRID_API_KEY &&
       SENDGRID_TEMPLATE_OWNER &&
@@ -751,35 +678,14 @@ ${message}
       } catch (err) {
         console.error("SendGrid error", err);
       }
-    } else if (transporter) {
-      const icalEvent = buildICS(
-        "Prospective Notary Appointment",
-        `${name} – ${service || "General"}\nPhone: ${phone || "n/a"}\nEmail: ${email}`,
-      );
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM || "no-reply@example.com",
-        to: process.env.EMAIL_TO || "owner@example.com",
-        subject: "Keystone Notary — Contact form",
-        text,
-        icalEvent: { content: icalEvent },
-      });
     } else {
       console.log("[DEMO] Email to owner would be sent with:\n", text);
-    }
-    if (transporter && email) {
-      const icalEvent = buildICS(
-        "Prospective Notary Appointment",
-        `${name} – ${service || "General"}\nPhone: ${phone || "n/a"}\nEmail: ${email}`,
-      );
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM || "no-reply@example.com",
-        to: email,
-        subject: "We received your message — Keystone Notary Group",
-        html,
-        icalEvent: { content: icalEvent },
-      });
-    } else if (email) {
-      console.log("[DEMO] Confirmation email to", email, "with HTML template.");
+      if (email)
+        console.log(
+          "[DEMO] Confirmation email to",
+          email,
+          "with HTML template.",
+        );
     }
     res.json({ ok: true });
   } catch (err) {
@@ -867,7 +773,7 @@ app.post("/api/chat", async (req, res) => {
 Location: Hellertown, PA. Services: mobile notary, NNA certified & insured signing agents.
 Phone: (267) 309-9000. Email: info@keystonenotarygroup.com. Avoid legal advice; suggest contacting us for specifics.`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await global.fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,

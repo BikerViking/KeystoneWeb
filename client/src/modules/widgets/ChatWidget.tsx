@@ -1,9 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
 export function ChatWidget(){
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<{role:'user'|'ai', text:string}[]>([])
   const [input, setInput] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+  }, [open])
+
   async function send(e: React.FormEvent){
     e.preventDefault()
     if(!input.trim()) return
@@ -28,7 +36,7 @@ export function ChatWidget(){
             {msgs.map((m,i)=>(<p key={i} className={m.role==='user'?'text-right':'text-left text-platinum'}>{m.text}</p>))}
           </div>
           <form onSubmit={send} className="flex gap-2">
-            <input className="flex-1 rounded border border-white/15 bg-black/40 p-2" value={input} onChange={e=>setInput(e.target.value)} placeholder="Type your question…" required />
+            <input ref={inputRef} className="flex-1 rounded border border-white/15 bg-black/40 p-2" value={input} onChange={e=>setInput(e.target.value)} placeholder="Type your question…" required />
             <button className="bg-platinum text-black font-extrabold rounded-lg shadow-glass px-3">Send</button>
           </form>
           <p className="text-center text-muted text-xs m-0">AI assistant powered by OpenAI. Do not share sensitive info.</p>
