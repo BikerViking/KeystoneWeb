@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
 import cookieParser from 'cookie-parser';
+import { createClient as createRedisClient } from 'redis';
 // ---------- File Uploads -> Google Drive (or local demo) ----------
 import multer from 'multer';
 import fs from 'fs';
@@ -102,24 +103,60 @@ app.use('/api/', limiter);
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.EMAIL_TO || 'owner@example.com';
 const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const REDIS_URL = process.env.REDIS_URL;
+let redis = null;
+if (REDIS_URL) {
+  try {
+    redis = createRedisClient({ url: REDIS_URL });
+    redis.on('error', e => console.error('Redis error', e));
+    await redis.connect();
+  } catch (e) {
+    console.error('Redis connect failed', e);
+    redis = null;
+  }
+}
 const memory = { tokens: new Map(), sessions: new Map() };
 
-function issueToken(email){
+function pruneMemory(){
+  const now = Date.now();
+  for (const [k,v] of memory.tokens) if (v.exp < now) memory.tokens.delete(k);
+  for (const [k,v] of memory.sessions) if (v.exp < now) memory.sessions.delete(k);
+}
+if (!redis) setInterval(pruneMemory, 60 * 1000).unref();
+
+async function issueToken(email){
   const token = (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
-  const exp = Date.now() + ADMIN_TOKEN_TTL_MS;
-  memory.tokens.set(token, { email, exp });
+  if (redis){
+    await redis.set(`admintoken:${token}`, email, { EX: Math.floor(ADMIN_TOKEN_TTL_MS/1000) });
+  } else {
+    const exp = Date.now() + ADMIN_TOKEN_TTL_MS;
+    memory.tokens.set(token, { email, exp });
+  }
   return token;
 }
-function setSession(res, email){
+async function setSession(res, email){
   const id = Math.random().toString(36).slice(2);
-  const exp = Date.now() + ADMIN_SESSION_TTL_MS;
-  memory.sessions.set(id, { email, exp });
+  if (redis){
+    await redis.set(`adminsession:${id}`, email, { EX: Math.floor(ADMIN_SESSION_TTL_MS/1000) });
+  } else {
+    const exp = Date.now() + ADMIN_SESSION_TTL_MS;
+    memory.sessions.set(id, { email, exp });
+  }
   res.cookie('ks_admin', id, { httpOnly: true, sameSite: 'lax', maxAge: ADMIN_SESSION_TTL_MS });
 }
-function requireAdmin(req,res,next){
+async function requireAdmin(req,res,next){
   const sid = req.cookies?.ks_admin;
-  const s = sid && memory.sessions.get(sid);
-  if (!s || s.exp < Date.now()) return res.status(401).json({ error:'unauthorized' });
+  let ok = false;
+  if (sid){
+    if (redis){
+      const email = await redis.get(`adminsession:${sid}`);
+      ok = !!email;
+    } else {
+      const s = memory.sessions.get(sid);
+      ok = !!s && s.exp >= Date.now();
+    }
+  }
+  if (!ok) return res.status(401).json({ error:'unauthorized' });
   next();
 }
 
@@ -136,7 +173,7 @@ function writeJSON(file, obj){ fs.writeFileSync(file, JSON.stringify(obj, null, 
 app.post('/api/admin/request-magic-link', async (req,res)=>{
   const email = (req.body?.email || '').toString();
   if (!email) return res.status(400).json({ error:'email required' });
-  const token = issueToken(email);
+  const token = await issueToken(email);
   const url = (process.env.ADMIN_URL_BASE || 'http://localhost:5173') + '/admin?token=' + token;
   if (process.env.SENDGRID_API_KEY){
     try{
@@ -149,17 +186,29 @@ app.post('/api/admin/request-magic-link', async (req,res)=>{
   }
   res.json({ ok:true });
 });
-app.post('/api/admin/login', (req,res)=>{
+app.post('/api/admin/login', async (req,res)=>{
   const token = (req.body?.token || '').toString();
-  const record = memory.tokens.get(token);
-  if (!record || record.exp < Date.now()) return res.status(400).json({ error:'invalid token' });
-  memory.tokens.delete(token);
-  setSession(res, record.email);
+  let email = null;
+  if (redis){
+    email = await redis.get(`admintoken:${token}`);
+    if (email) await redis.del(`admintoken:${token}`);
+  } else {
+    const record = memory.tokens.get(token);
+    if (record && record.exp >= Date.now()){
+      email = record.email;
+      memory.tokens.delete(token);
+    }
+  }
+  if (!email) return res.status(400).json({ error:'invalid token' });
+  await setSession(res, email);
   res.json({ ok:true });
 });
-app.post('/api/admin/logout', requireAdmin, (req,res)=>{
+app.post('/api/admin/logout', requireAdmin, async (req,res)=>{
   const sid = req.cookies?.ks_admin;
-  if (sid) memory.sessions.delete(sid);
+  if (sid){
+    if (redis) await redis.del(`adminsession:${sid}`);
+    else memory.sessions.delete(sid);
+  }
   res.clearCookie('ks_admin');
   res.json({ ok:true });
 });
