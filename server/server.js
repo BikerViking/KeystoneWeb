@@ -13,6 +13,9 @@ import fs from 'fs';
 import path from 'path';
 
 const app = express();
+// Configure CORS with an explicit origin whitelist and optional credentials
+const CORS_WHITELIST = (process.env.CORS_WHITELIST || 'https://example.com').split(',');
+const CORS_ALLOW_CREDENTIALS = process.env.CORS_ALLOW_CREDENTIALS === 'true';
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'text/plain'];
 const upload = multer({
   dest: path.resolve(process.cwd(), 'tmp'),
@@ -101,7 +104,16 @@ app.post('/api/upload', (req, res) => {
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET;
 
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || CORS_WHITELIST.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: CORS_ALLOW_CREDENTIALS,
+}));
 app.use(express.json());
 app.use(morgan('tiny'));
 app.use(cookieParser());
