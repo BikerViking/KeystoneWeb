@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import fetch from "node-fetch";
 import nodemailer from "nodemailer";
 import cookieParser from "cookie-parser";
 import { google } from "googleapis";
