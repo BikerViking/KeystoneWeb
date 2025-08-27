@@ -373,7 +373,7 @@ ${message}
       }
     } catch(e) { console.error('Sheets append error', e); }
     // Create Calendar event if possible
-    await createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime });
+    await createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime, uploads });
 
     const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0b0b0d;color:#f2f2f2;padding:24px">
@@ -428,7 +428,7 @@ ${message}
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 // Create Google Calendar event if configured
-async function createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime }){
+async function createCalendarEvent({ name, email, phone, service, message, address, preferredDate, preferredTime, uploads }){
   if (!process.env.CALENDAR_ID) return null;
   const creds = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (!creds) return null;
@@ -446,7 +446,10 @@ async function createCalendarEvent({ name, email, phone, service, message, addre
     }
     const end = new Date(start.getTime() + 60*60*1000);
 
-    const uploadsSection = Array.isArray(uploads) && uploads.length ? ('\n\nLoan Docs:\n' + uploads.join('\n')) : '';
+    const safeUploads = Array.isArray(uploads)
+      ? uploads.map(u => (u || '').toString().replace(/\r?\n/g, '').trim()).filter(Boolean)
+      : [];
+    const uploadsSection = safeUploads.length ? ('\n\nLoan Docs:\n' + safeUploads.join('\n')) : '';
     const event = {
       calendarId: process.env.CALENDAR_ID,
       requestBody: {
