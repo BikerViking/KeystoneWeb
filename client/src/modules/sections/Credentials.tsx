@@ -28,7 +28,7 @@ export function Credentials(){
         <div className="pane rounded-2xl border border-white/15 bg-white/5 h-[22vh] grid place-items-center text-4xl font-extrabold">Background‑Checked</div>
       </div>
       <figure className="mt-8 opacity-90">
-        <img src="https://www.keystonenotarygroup.com/assets/nna_badge.webp" alt="NNA Certified Notary Signing Agent badge for 2025" className="h-24 w-auto mx-auto"/>
+        <img src="/assets/nna_badge.png" alt="NNA Certified Notary Signing Agent badge for 2025" className="h-24 w-auto mx-auto"/>
         <figcaption className="text-center text-muted mt-2">NNA Notary Signing Agent — 2025</figcaption>
       </figure>
     </section>

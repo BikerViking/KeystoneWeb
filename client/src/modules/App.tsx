@@ -45,7 +45,7 @@ export default function App(){
       </main>
       <footer className="max-w-6xl mx-auto px-4 py-10 text-muted flex items-center justify-between">
         <p>© {new Date().getFullYear()} Keystone Notary Group, LLC — Hellertown, PA</p>
-        <a href="#hero" className="border border-white/10 rounded px-2 py-1">▲ Top</a>
+        <a href="#hero" aria-label="Back to top" className="border border-white/10 rounded px-2 py-1">▲ Top</a>
       </footer>
       <ChatWidget/>
     </>

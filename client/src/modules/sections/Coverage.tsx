@@ -10,7 +10,7 @@ export function Coverage(){
       if (!lineRef.current) return
       const mm = gsap.matchMedia()
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const length = 800
+        const length = lineRef.current?.getTotalLength() || 800
         gsap.set(lineRef.current, { strokeDasharray: length, strokeDashoffset: length })
         gsap.to(lineRef.current, {
           strokeDashoffset: 0,
