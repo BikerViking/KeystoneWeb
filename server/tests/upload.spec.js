@@ -20,4 +20,19 @@ describe('POST /api/upload', () => {
       .field('dummy', '1');
     expect(res.status).toBe(400);
   });
+
+  it('rejects disallowed mime types', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .attach('files', Buffer.from('bad'), 'bad.exe');
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects files that exceed size limits', async () => {
+    const big = Buffer.alloc(5 * 1024 * 1024 + 1, 0);
+    const res = await request(app)
+      .post('/api/upload')
+      .attach('files', big, 'big.txt');
+    expect(res.status).toBe(400);
+  });
 });
