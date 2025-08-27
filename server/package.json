@@ -2,6 +2,9 @@
   "name": "keystone-notary-server",
   "private": true,
   "version": "0.0.1",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "scripts": {
     "dev": "node server.js",
