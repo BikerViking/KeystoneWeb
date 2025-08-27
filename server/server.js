@@ -12,7 +12,18 @@ import fs from 'fs';
 import path from 'path';
 
 const app = express();
-const upload = multer({ dest: path.resolve(process.cwd(), 'tmp') });
+const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'text/plain'];
+const upload = multer({
+  dest: path.resolve(process.cwd(), 'tmp'),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
 const DRIVE_ROOT_FOLDER_ID = process.env.DRIVE_ROOT_FOLDER_ID;
 
 async function ensureDriveClient(){
@@ -46,40 +57,45 @@ async function driveUploadFile(drive, filePath, fileName, parentId){
   return res.data;
 }
 
-app.post('/api/upload', upload.array('files', 10), async (req, res)=>{
-  try{
-    const clientName = (req.body?.name || 'Unknown').toString().replace(/[^a-z0-9 _-]/gi,' ').trim() || 'Unknown';
-    const dateSlug = new Date().toISOString().slice(0,10);
-    const files = req.files || [];
-    if (!files.length) return res.status(400).json({ error:'No files' });
+app.post('/api/upload', (req, res) => {
+  upload.array('files', 10)(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    try {
+      const clientName = (req.body?.name || 'Unknown').toString().replace(/[^a-z0-9 _-]/gi,' ').trim() || 'Unknown';
+      const dateSlug = new Date().toISOString().slice(0,10);
+      const files = req.files || [];
+      if (!files.length) return res.status(400).json({ error:'No files' });
 
-    // DEMO fallback (no Drive folder configured or no credentials)
-    const drive = await ensureDriveClient();
-    if (!drive || !DRIVE_ROOT_FOLDER_ID){
-      const localDir = path.resolve(process.cwd(), 'uploads', `${dateSlug}_${clientName.replace(/\s+/g,'')}`);
-      fs.mkdirSync(localDir, { recursive: true });
-      const out = [];
-      for (const f of files){
-        const dest = path.join(localDir, f.originalname || f.filename);
-        fs.renameSync(f.path, dest);
-        out.push({ mode:'local', path: dest, name: f.originalname });
+      // DEMO fallback (no Drive folder configured or no credentials)
+      const drive = await ensureDriveClient();
+      if (!drive || !DRIVE_ROOT_FOLDER_ID){
+        const localDir = path.resolve(process.cwd(), 'uploads', `${dateSlug}_${clientName.replace(/\s+/g,'')}`);
+        fs.mkdirSync(localDir, { recursive: true });
+        const out = [];
+        for (const f of files){
+          const dest = path.join(localDir, f.originalname || f.filename);
+          fs.renameSync(f.path, dest);
+          out.push({ mode:'local', path: dest, name: f.originalname });
+        }
+        return res.json({ ok:true, target:'local', items: out });
       }
-      return res.json({ ok:true, target:'local', items: out });
-    }
 
-    // DRIVE mode
-    const parent = await driveCreateFolder(drive, `${dateSlug}_${clientName}`, DRIVE_ROOT_FOLDER_ID);
-    const uploaded = [];
-    for (const f of files){
-      const up = await driveUploadFile(drive, f.path, f.originalname || f.filename, parent.id);
-      uploaded.push({ id: up.id, name: up.name, webViewLink: up.webViewLink, webContentLink: up.webContentLink, parent: parent.id });
-      fs.unlinkSync(f.path);
+      // DRIVE mode
+      const parent = await driveCreateFolder(drive, `${dateSlug}_${clientName}`, DRIVE_ROOT_FOLDER_ID);
+      const uploaded = [];
+      for (const f of files){
+        const up = await driveUploadFile(drive, f.path, f.originalname || f.filename, parent.id);
+        uploaded.push({ id: up.id, name: up.name, webViewLink: up.webViewLink, webContentLink: up.webContentLink, parent: parent.id });
+        fs.unlinkSync(f.path);
+      }
+      return res.json({ ok:true, target:'drive', folderId: parent.id, items: uploaded });
+    } catch(e){
+      console.error(e);
+      return res.status(500).json({ error:'upload failed' });
     }
-    return res.json({ ok:true, target:'drive', folderId: parent.id, items: uploaded });
-  }catch(e){
-    console.error(e);
-    return res.status(500).json({ error:'upload failed' });
-  }
+  });
 });
 
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET;
