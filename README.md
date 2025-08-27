@@ -6,7 +6,7 @@ Apple‑level single page experience with scroll‑driven, reversible animations
 ### 1) API (for email + OpenAI chat)
 ```
 cd server
-cp .env.example .env    # fill SMTP + OPENAI_API_KEY
+cp .env.example .env    # fill in SMTP, OpenAI, Google IDs, etc.
 npm install
 npm run dev
 ```
