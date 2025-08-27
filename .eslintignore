@@ -1,0 +1,7 @@
+# Ignore compiled and asset files
+client/public/assets/**
+client/public/*.png
+client/public/*.jpg
+client/public/*.jpeg
+client/public/*.svg
+**/node_modules/**
