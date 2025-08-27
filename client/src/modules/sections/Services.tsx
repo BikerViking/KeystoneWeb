@@ -7,15 +7,21 @@ export function Services(){
   const [items, setItems] = useState<{title:string, body:string}[]>([])
   useEffect(()=>{ fetch('/api/cms/services').then(r=>r.json()).then(j=> setItems(j.data || [])) },[])
   useEffect(()=>{
-    const cards = gsap.utils.toArray<HTMLElement>('#services .card')
-    cards.forEach((el, i)=>{
-      gsap.fromTo(el, {y:30, opacity:0, clipPath:'inset(0 0 100% 0 round 16px)'}, {
-        y:0, opacity:1, clipPath:'inset(0 0 0% 0 round 16px)',
-        duration:0.9, ease:'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' }
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia()
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const cards = gsap.utils.toArray<HTMLElement>('#services .card')
+        cards.forEach((el) => {
+          gsap.fromTo(el, {y:30, opacity:0, clipPath:'inset(0 0 100% 0 round 16px)'}, {
+            y:0, opacity:1, clipPath:'inset(0 0 0% 0 round 16px)',
+            duration:0.9, ease:'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' }
+          })
+        })
       })
     })
-  },[])
+    return () => ctx.revert()
+  },[items])
   const display = items.length ? items : [
     {title:'Loan Signings', body:'Purchase, refinance, HELOC, reverse—error‑free, lender‑friendly packages.'},
     {title:'General Notary Work', body:'POAs, affidavits, deeds, titles, I‑9s, and more—mobile to you.'},

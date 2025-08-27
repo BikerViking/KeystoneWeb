@@ -6,13 +6,19 @@ gsap.registerPlugin(ScrollTrigger)
 export function Coverage(){
   const lineRef = useRef<SVGPathElement>(null)
   useEffect(()=>{
-    if (!lineRef.current) return
-    const length = 800
-    gsap.set(lineRef.current, { strokeDasharray: length, strokeDashoffset: length })
-    gsap.to(lineRef.current, {
-      strokeDashoffset: 0,
-      scrollTrigger: { trigger: '#coverage', start: 'top 70%', end: 'bottom top', scrub: true }
+    const ctx = gsap.context(() => {
+      if (!lineRef.current) return
+      const mm = gsap.matchMedia()
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const length = 800
+        gsap.set(lineRef.current, { strokeDasharray: length, strokeDashoffset: length })
+        gsap.to(lineRef.current, {
+          strokeDashoffset: 0,
+          scrollTrigger: { trigger: '#coverage', start: 'top 70%', end: 'bottom top', scrub: true }
+        })
+      })
     })
+    return () => ctx.revert()
   },[])
   return (
     <section id="coverage" className="min-h-[100svh] grid place-items-center px-4 text-center">
