@@ -6,7 +6,15 @@ import rateLimit from 'express-rate-limit';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
 import cookieParser from 'cookie-parser';
-import { createClient as createRedisClient } from 'redis';
+import { google } from 'googleapis';
+// Redis is optional; dynamically import so tests can run without the module
+let createRedisClient;
+try {
+  ({ createClient: createRedisClient } = await import('redis'));
+} catch {
+  createRedisClient = null;
+  console.warn('redis module not found; continuing without Redis support');
+}
 // ---------- File Uploads -> Google Drive (or local demo) ----------
 import multer from 'multer';
 import fs from 'fs';
@@ -133,7 +141,7 @@ const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const REDIS_URL = process.env.REDIS_URL;
 let redis = null;
-if (REDIS_URL) {
+if (REDIS_URL && createRedisClient) {
   try {
     redis = createRedisClient({ url: REDIS_URL });
     redis.on('error', e => console.error('Redis error', e));
@@ -142,6 +150,8 @@ if (REDIS_URL) {
     console.error('Redis connect failed', e);
     redis = null;
   }
+} else if (REDIS_URL) {
+  console.warn('REDIS_URL provided but redis module is unavailable');
 }
 const memory = { tokens: new Map(), sessions: new Map() };
 
@@ -269,7 +279,6 @@ app.get('/api/cms/services', async (req, res, next)=>{
 
 // --- Optional providers ---
 import sgMail from '@sendgrid/mail';
-import { google } from 'googleapis';
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_TEMPLATE_OWNER = process.env.SENDGRID_TEMPLATE_OWNER;
