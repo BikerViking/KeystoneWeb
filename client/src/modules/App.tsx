@@ -18,7 +18,7 @@ export default function App(){
       requestAnimationFrame(raf)
     }
     requestAnimationFrame(raf)
-    return ()=>{ (lenis as any).destroy?.() }
+    return () => { lenis.destroy() }
   },[])
   return (
     <>
