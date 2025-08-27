@@ -2,6 +2,9 @@
   "name": "keystone-notary-god-tier",
   "private": true,
   "version": "0.0.1",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
